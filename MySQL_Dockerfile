@@ -1,4 +1,5 @@
 FROM debian:jessie
+MAINTAINER lishiyun19@163.com
 
 # 添加 mysql 账户
 RUN groupadd -r mysql && useradd -r -g mysql mysql
