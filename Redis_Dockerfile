@@ -1,4 +1,5 @@
 FROM debian:jessie
+MAINTAINER lishiyun19@163.com
 
 # 添加 Redis 账户
 RUN groupadd -r redis && useradd -r -g redis redis
