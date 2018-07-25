@@ -1,4 +1,5 @@
 FROM debian:wheezy
+MAINTAINER lishiyun19@163.com
 
 # 添加 mongodb 账户
 RUN groupadd -r mongodb && useradd -r -g mongodb mongodb
