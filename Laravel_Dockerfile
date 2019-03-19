@@ -1,0 +1,61 @@
+FROM composer AS backend
+
+RUN composer config -g repo.packagist composer https://packagist.phpcomposer.com
+# 并行下载 https://packagist.org/packages/hirak/prestissimo
+RUN composer global require hirak/prestissimo
+COPY back-web/composer.json /app/composer.json
+COPY back-web/composer.lock /app/composer.lock
+COPY back-web/database /app/database
+RUN composer install --ignore-platform-reqs --no-scripts
+COPY back-web /app
+
+FROM node:8-alpine AS frontend
+
+RUN npm config set registry http://registry.npm.taobao.org/
+RUN mkdir /app
+WORKDIR /app
+COPY front-web/package.json /app/package.json
+RUN npm install
+COPY front-web /app
+RUN npm run build
+
+FROM alpine:3.8
+LABEL maintainer="lishiyun19@163.com"
+
+RUN echo "http://mirrors.ustc.edu.cn/alpine/v3.8/main/" > /etc/apk/repositories \
+        && echo "http://mirrors.ustc.edu.cn/alpine/v3.8/community/" >> /etc/apk/repositories
+
+RUN apk --no-cache add supervisor
+RUN apk --no-cache add \
+        php7 \
+        php7-json \
+        php7-openssl \
+        php7-pdo_mysql \
+        php7-mbstring \
+        php7-fileinfo \
+        php7-fpm \
+        php7-tokenizer \
+        php7-xml \
+        php7-xmlwriter \
+        php7-dom \
+        php7-session \
+        php7-gd \
+        nginx \
+        shadow
+
+RUN mkdir /run/nginx && mkdir /app \
+        && useradd --no-log-init -r -g www-data www-data
+
+COPY docker/fs-web/ /
+COPY --from=backend /app /app
+COPY --from=frontend /app/dist /app/public
+WORKDIR /app
+
+RUN mkdir /data && chmod -R 777 /data && chmod -R 777 bootstrap
+
+EXPOSE 80
+EXPOSE 443
+VOLUME [ "/conf", "/data" ]
+RUN ln -s /conf/back.env /app/.env \
+        && chown -R www-data:www-data /app/storage
+CMD [ "supervisord", "-c", "/etc/supervisord.conf" ]

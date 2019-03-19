@@ -1,0 +1,19 @@
+FROM alpine:3.8
+LABEL maintainer="lishiyun19@163.com"
+
+RUN echo "http://mirrors.ustc.edu.cn/alpine/v3.8/main/" > /etc/apk/repositories \
+        && echo "http://mirrors.ustc.edu.cn/alpine/v3.8/community/" >> /etc/apk/repositories
+
+RUN apk --no-cache add supervisor
+RUN apk --no-cache add ca-certificates msmtp mutt \
+        && touch /etc/msmtprc \
+        && touch /var/log/msmtp.log \
+        && cp /etc/Muttrc /etc/Muttrc~
+
+COPY docker/fs-server/ /
+COPY soc-server/bin/ /root/bin
+
+EXPOSE 10002
+VOLUME [ "/middleware" ]
+WORKDIR "/middleware"
+CMD [ "supervisord", "-c", "/etc/supervisord.conf" ]
